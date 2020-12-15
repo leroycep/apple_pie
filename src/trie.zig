@@ -103,7 +103,7 @@ pub fn Trie(comptime T: type) type {
             var params: [max_params]Entry = undefined;
             var param_count: usize = 0;
             var current = &self.root;
-            var it = std.mem.split(path[1..], "/");
+            var it = std.mem.split(std.mem.trimRight(u8, path[1..], "/ "), "/");
 
             loop: while (it.next()) |component| {
                 for (current.childs) |child| {
@@ -185,6 +185,7 @@ test "Insert and retrieve paths with same prefix" {
     const res4 = trie.get("/api/events/1337");
     const res5 = trie.get("/foo");
     const res6 = trie.get("/api/api/events");
+    const res7 = trie.get("/api/events/");
 
     std.testing.expectEqual(@as(u32, 1), res.static);
     std.testing.expectEqual(@as(u32, 2), res2.static);
@@ -192,6 +193,31 @@ test "Insert and retrieve paths with same prefix" {
     std.testing.expectEqual(@as(u32, 4), res4.with_params.data);
     std.testing.expect(res5 == .none);
     std.testing.expect(res6 == .none);
+    std.testing.expectEqual(@as(u32, 3), res7.static);
 
     std.testing.expectEqualStrings("1337", res4.with_params.params[0].value);
+}
+
+test "Paths ending with component separator are treated the same" {
+    comptime var trie = Trie(u32){};
+
+    // One of these two routes should be ignored, and for now it happens to be the one
+    // added second.
+    comptime trie.insert("/api", 1);
+    comptime trie.insert("/api/", 2);
+    
+    comptime trie.insert("/api/:id", 3);
+
+    const res = trie.get("/api");
+    const res2 = trie.get("/api/");
+    const res3 = trie.get("/api/23154");
+    const res4 = trie.get("/ap");
+
+    // Both should resolve to the same route, in this case the first one added
+    std.testing.expectEqual(@as(u32, 1), res.static);
+    std.testing.expectEqual(@as(u32, 1), res2.static);
+    std.testing.expectEqual(@as(u32, 3), res3.with_params.data);
+    std.testing.expect(res4 == .none);
+
+    std.testing.expectEqualStrings("23154", res3.with_params.params[0].value);
 }
