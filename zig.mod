@@ -5,5 +5,5 @@ dependencies:
 - type: git
   path: https://github.com/lithdew/pike
 - type: git
-  path: https://github.com/kprotty/zap
-  version: branch-ziggo
+  path: https://github.com/leroycep/zap
+  version: branch-zig-0.8.0-dev.1028
